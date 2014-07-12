@@ -47,6 +47,7 @@ namespace Sniper.Lighting.DMX
             //thread = new Thread(new ParameterizedThreadStart(ThreadAction));
             this.UniqueIdentifier = Guid.NewGuid();
         }
+
         public void StartIn(int delay)
         {
             var handle = this;
@@ -159,17 +160,20 @@ namespace Sniper.Lighting.DMX
         {
             Stop(false);
         }
+
         public void Stop(bool resetToOriginal)
         {
             running = false; 
             if (this.Channel == 0) Console.WriteLine("Stop called for channel 0");
             var handle = this;
             //make sure we reached the final value
-            DMXProUSB.SetDmxValue(this.Channel, (byte)handle.NewValue);
-           
+            //DMXProUSB.SetDmxValue(this.Channel, (byte)handle.NewValue);
+            NewValue = 0;
+
             if (resetToOriginal)
             {
-                DMXProUSB.SetDmxValue(Channel, OriginalValue);
+                NewValue = OriginalValue;
+                //DMXProUSB.SetDmxValue(Channel, OriginalValue);
             }
             
             if (handle.OnComplete != null)

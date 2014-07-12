@@ -7,14 +7,17 @@ using System.Threading;
 namespace Sniper.Lighting.DMX
 {
     
-    public static class DmxController
+    public static class DmxController<T> where T : DMXProUSB, new()
     {
         private static List<Channel> Channels = new List<Channel>();
         private static int _numChannels = 512;
         private static Thread runningThread;
         private static bool done;
+        private static T dmxDevice;
+
         static DmxController()
         {
+            dmxDevice = new T();
             done = false;
             lock (Channels)
             {
@@ -23,7 +26,7 @@ namespace Sniper.Lighting.DMX
                     Channel c = new Channel(i, 
                         (int channel, byte value) => {
                             //Console.WriteLine("{0}: DMXProUSB.SetDmxValue({1},{2})", DateTime.Now, channel, value);
-                            DMXProUSB.SetDmxValue(channel, value);
+                            dmxDevice.SetDmxValue(channel, value);
                         });
                     Channels.Add(c);
                 }
@@ -31,15 +34,23 @@ namespace Sniper.Lighting.DMX
             runningThread = new Thread(new ThreadStart(Run));
             runningThread.IsBackground = true;
             runningThread.Start();
-            DMXProUSB.StateChanged += new StateChangedEventHandler(DMXProUSB_StateChanged);
+            dmxDevice.StateChanged += new StateChangedEventHandler(DMXProUSB_StateChanged);
         }
 
         static void DMXProUSB_StateChanged(object sender, StateChangedEventArgs e)
         {
-            if (DmxController.StateChanged != null)
+            if (StateChanged != null)
             {
-                DmxController.StateChanged(sender, e);
+                StateChanged(sender, e);
             }
+        }
+
+        public static Effect EaseDmxValue(int channel, byte endValue, int duration, EasingType typeIn, EasingType typeOut, EasingExtents extents)
+        {
+            Effect handle = new Effect(channel, Channels[channel].Value, endValue, duration, typeIn, typeOut, extents);
+            Channels[channel].QueueEffect(handle);
+            handle.Start();
+            return handle;
         }
 
         public static Effect EaseDmxValue(int channel, byte startValue, byte endValue, int duration, EasingType typeIn, EasingType typeOut, EasingExtents extents)
@@ -58,17 +69,18 @@ namespace Sniper.Lighting.DMX
             return handle;
         }
 
-        
         public static void SetDmxValue(int channel, byte value, DateTime when)
         {
             Effect handle = new Effect(channel, Channels[channel].Value, value, 0, EasingType.Linear, EasingType.Linear, EasingExtents.EaseInOut);
             Channels[channel].QueueEffect(handle);
             handle.StartIn((int)(when - DateTime.Now).TotalMilliseconds);          
         }
+
         public static void SetDmxValue(int channel, byte value)
         {
             SetDmxValue(channel, value, DateTime.Now);
         }
+
         public static void SetDmxValue(int channel, byte value, int revertInDuration)
         {
             byte current = GetDmxValue(channel);
@@ -78,7 +90,7 @@ namespace Sniper.Lighting.DMX
 
         public static byte GetDmxValue(int channel)
         {
-           return DMXProUSB.GetDmxValue(channel);
+            return dmxDevice.GetDmxValue(channel);
         }        
 
         private static void Run()
@@ -113,26 +125,31 @@ namespace Sniper.Lighting.DMX
             }
             runningThread = null;
 
-            DMXProUSB.Dispose();
+            dmxDevice.Dispose();
         }
 
         public static byte[] GetCurrentValues()
         {
-            return DMXProUSB.GetCurrentBuffer();
+            return dmxDevice.GetCurrentBuffer();
         }
 
         public static bool Start()
         {
-            return DMXProUSB.start();
+            return dmxDevice.start();
         }
 
-        public static bool Connected { get { return DMXProUSB.Connected; } }
+        public static bool Connected { get { return dmxDevice.Connected; } }
         public static void SetLimits(DmxLimits newLimits)
         {
-            DMXProUSB.setLimits(newLimits);
+            dmxDevice.setLimits(newLimits);
         }
 
         public static event StateChangedEventHandler StateChanged;
 
+
+        public static void Stop()
+        {
+            dmxDevice.stop();
+        }
     }
 }
