@@ -62,6 +62,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="Pulse.cs" />
     <Compile Include="StateChangedEventArgs.cs" />
     <Compile Include="StateChangedEventHandler.cs" />
   </ItemGroup>

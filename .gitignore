@@ -1,0 +1,5 @@
+*.dll
+*.pdb
+*.config
+*.cache
+obj/Debug/Sniper.Lighting.DMX.csproj.FileListAbsolute.txt

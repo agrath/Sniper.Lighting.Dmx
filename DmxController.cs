@@ -88,6 +88,14 @@ namespace Sniper.Lighting.DMX
             SetDmxValue(channel, current, DateTime.Now.AddMilliseconds(revertInDuration));
         }
 
+        public static Effect PulseDmxValue(int channel, byte startValue, byte endValue, int duration, EasingType typeIn, EasingType typeOut, EasingExtents extents)
+        {
+            var handle = new Pulse(channel, startValue, endValue, duration, typeIn, typeOut, extents);
+            Channels[channel].QueueEffect(handle);
+            handle.Start();
+            return handle;
+        }
+
         public static byte GetDmxValue(int channel)
         {
             return dmxDevice.GetDmxValue(channel);

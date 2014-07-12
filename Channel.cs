@@ -46,13 +46,12 @@ namespace Sniper.Lighting.DMX
 
                     DateTime moment = DateTime.Now;
 
+                    byte value = e.GetCurrentValue();
+
                     if (moment >= e.FromTimestamp && moment <= e.ToTimestamp)
                     {
-                        byte value = e.GetCurrentValue();
                         sum += value;
-
                         //Console.WriteLine("{0}: Effect {1} produced value {2} for channel {3}", DateTime.Now, e.UniqueIdentifier, value, e.Channel);
-
                         hasValue = true;
                     }
 

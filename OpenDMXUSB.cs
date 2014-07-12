@@ -277,10 +277,9 @@ namespace Sniper.Lighting.DMX
                 buffer[channel] = value;
             }
             newData = true;
-            Thread.Sleep(500);
+            Thread.Sleep(200);
             done = true;
             FT_Close(handle);
-
             handle = 0;
         }
     }
