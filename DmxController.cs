@@ -157,6 +157,10 @@ namespace Sniper.Lighting.DMX
 
         public static void Stop()
         {
+            foreach ( var c in Channels )
+            {
+                c.Stop();
+            }
             dmxDevice.stop();
         }
     }

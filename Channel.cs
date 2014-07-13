@@ -84,6 +84,14 @@ namespace Sniper.Lighting.DMX
                
             }
         }
-        
+
+
+        internal void Stop()
+        {
+            foreach ( var e in Effects )
+            {
+                e.Stop();
+            }
+        }
     }
 }

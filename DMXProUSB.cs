@@ -198,8 +198,12 @@ namespace Sniper.Lighting.DMX
                     if (value < limits.Min[channel]) value = limits.Min[channel];
                 }
                 buffer[channel] = value;
-            }
+            } 
+            newData = true;
             Thread.Sleep(500);
+            FTDI_ClosePort();
+            FT_Close(handle);
+            Connected = false;
             done = true;
         }
         public byte GetDmxValue(int channel)
@@ -408,7 +412,7 @@ namespace Sniper.Lighting.DMX
                         PRO_Params.BreakTime = paramsBuff[2];
                         PRO_Params.MaBTime = paramsBuff[3];
                         PRO_Params.RefreshRate = paramsBuff[4];
-                        //// Check Response
+                        // Check Response
                         if (res == NO_RESPONSE)
                         {
                             //Receive Widget Response packet
