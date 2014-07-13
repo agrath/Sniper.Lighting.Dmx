@@ -44,6 +44,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Channel.cs" />
+    <Compile Include="Class1.cs" />
+    <Compile Include="DmxControllerInstance.cs" />
     <Compile Include="DmxLimits.cs" />
     <Compile Include="DMXProUSB.cs">
       <SubType>Code</SubType>
