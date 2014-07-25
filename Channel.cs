@@ -92,6 +92,8 @@ namespace Sniper.Lighting.DMX
             {
                 e.Stop();
             }
+
+            //this.Effects.Clear();
         }
     }
 }

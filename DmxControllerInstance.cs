@@ -160,6 +160,13 @@ namespace Sniper.Lighting.DMX
 
         public event StateChangedEventHandler StateChanged;
 
+        public void StopEffects()
+        {
+            foreach (var c in Channels)
+            {
+                c.Stop();
+            }
+        }
 
         public void Stop()
         {
