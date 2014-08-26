@@ -2,7 +2,7 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Sniper.Lighting.DMX.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="DMXChannelCount" Type="System.Int32" Scope="User">
+    <Setting Name="DMXChannelCount" Type="System.Int32" Scope="Application">
       <Value Profile="(Default)">512</Value>
     </Setting>
   </Settings>

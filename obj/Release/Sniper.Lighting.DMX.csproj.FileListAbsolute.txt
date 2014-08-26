@@ -1,0 +1,14 @@
+C:\Users\Porc\Documents\Code\OpenSource\Sniper.Lighting.Dmx\obj\Release\Sniper.Lighting.DMX.csprojResolveAssemblyReference.cache
+C:\Users\Porc\Documents\Code\OpenSource\Sniper.Lighting.Dmx\bin\Release\ftd2xx.dll
+C:\Users\Porc\Documents\Code\OpenSource\Sniper.Lighting.Dmx\bin\Release\Sniper.Lighting.DMX.dll.config
+C:\Users\Porc\Documents\Code\OpenSource\Sniper.Lighting.Dmx\bin\Release\Sniper.Lighting.DMX.dll
+C:\Users\Porc\Documents\Code\OpenSource\Sniper.Lighting.Dmx\bin\Release\Sniper.Lighting.DMX.pdb
+C:\Users\Porc\Documents\Code\OpenSource\Sniper.Lighting.Dmx\obj\Release\Sniper.Lighting.DMX.dll
+C:\Users\Porc\Documents\Code\OpenSource\Sniper.Lighting.Dmx\obj\Release\Sniper.Lighting.DMX.pdb
+F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\bin\Release\ftd2xx.dll
+F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\bin\Release\Sniper.Lighting.DMX.dll.config
+F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\bin\Release\Sniper.Lighting.DMX.dll
+F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\bin\Release\Sniper.Lighting.DMX.pdb
+F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\obj\Release\Sniper.Lighting.DMX.csprojResolveAssemblyReference.cache
+F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\obj\Release\Sniper.Lighting.DMX.dll
+F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\obj\Release\Sniper.Lighting.DMX.pdb

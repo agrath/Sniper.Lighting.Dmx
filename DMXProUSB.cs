@@ -9,57 +9,53 @@ using FT_HANDLE = System.UInt32;
 using System.Diagnostics;
 using System.ComponentModel;
 using System.Runtime.ExceptionServices;
-using Sniper.Common.Extension;
-using Sniper.SkatePark.Automation.Common;
-using Sniper.Common;
 
 namespace Sniper.Lighting.DMX
 {
-    internal class DMXProUSB
+    public class DMXProUSB
     {
-
-        private static byte[] buffer;
-        private static uint handle;
-        private static bool done = false;
-        private static int bytesWritten = 0;
-        private static FT_STATUS status;
+        protected byte[] buffer;
+        protected uint handle;
+        protected bool done = false;
+        private int bytesWritten = 0;
+        protected FT_STATUS status;
 
         private const byte BITS_8 = 8;
         private const byte STOP_BITS_2 = 2;
         private const byte PARITY_NONE = 0;
         private const UInt16 FLOW_NONE = 0;
-        private const byte PURGE_RX = 1;
-        private const byte PURGE_TX = 2;
+        protected const byte PURGE_RX = 1;
+        protected const byte PURGE_TX = 2;
         private const UInt32 FT_LIST_NUMBER_ONLY = 0x80000000;
 
-        private const int GET_WIDGET_PARAMS = 3;
-        private const int GET_WIDGET_SN = 10;
+        protected const int GET_WIDGET_PARAMS = 3;
+        protected const int GET_WIDGET_SN = 10;
         private const int GET_WIDGET_PARAMS_REPLY = 3;
         private const int SET_WIDGET_PARAMS = 4;
         private const int SET_DMX_RX_MODE = 5;
-        private const int SET_DMX_TX_MODE = 6;
+        protected const int SET_DMX_TX_MODE = 6;
         private const int ONE_BYTE = 1;
         private const byte DMX_START_CODE = 0x7E;
-        private const byte DMX_END_CODE = 0xE7;
+        protected const byte DMX_END_CODE = 0xE7;
         private const byte OFFSET = 0xFF;
         private const int DMX_HEADER_LENGTH = 4;
         private const int BYTE_LENGTH = 8;
-        private const bool NO_RESPONSE = false;
+        protected const bool NO_RESPONSE = false;
         private const int DMX_PACKET_SIZE = 512;
-        public static bool Connected = false;
-        public static int StartCounter = 0;
+        public bool Connected = false;
+        public int StartCounter = 0;
 
         [System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptions]
         [DllImport("FTD2XX.dll")]
-        static extern FT_STATUS FT_Open(UInt32 uiPort, ref uint ftHandle);
+        protected static extern FT_STATUS FT_Open(UInt32 uiPort, ref uint ftHandle);
         [DllImport("FTD2XX.dll")]
-        static extern unsafe FT_STATUS FT_OpenEx(void* pvArg1, UInt32 dwFlags, ref FT_HANDLE ftHandle);
+        protected static extern unsafe FT_STATUS FT_OpenEx(void* pvArg1, UInt32 dwFlags, ref FT_HANDLE ftHandle);
         [DllImport("FTD2XX.dll")]
-        static extern unsafe FT_STATUS FT_ListDevices(void* pvArg1, void* pvArg2, UInt32 dwFlags);	// FT_ListDevices by number only
+        extern static unsafe FT_STATUS FT_ListDevices(void* pvArg1, void* pvArg2, UInt32 dwFlags);	// FT_ListDevices by number only
         [DllImport("FTD2XX.dll")]
-        static extern unsafe FT_STATUS FT_ListDevices(UInt32 pvArg1, void* pvArg2, UInt32 dwFlags);	// FT_ListDevcies by serial number or description by index only
+        extern static unsafe FT_STATUS FT_ListDevices(UInt32 pvArg1, void* pvArg2, UInt32 dwFlags);	// FT_ListDevcies by serial number or description by index only
         [DllImport("FTD2XX.dll")]
-        static extern FT_STATUS FT_Close(uint ftHandle);
+        protected static extern FT_STATUS FT_Close(uint ftHandle);
         [DllImport("FTD2XX.dll")]
         static extern FT_STATUS FT_Read(uint ftHandle, IntPtr lpBuffer, UInt32 dwBytesToRead, ref UInt32 lpdwBytesReturned);
         [DllImport("FTD2XX.dll")]
@@ -71,11 +67,11 @@ namespace Sniper.Lighting.DMX
         [DllImport("FTD2XX.dll")]
         static extern FT_STATUS FT_GetModemStatus(uint ftHandle, ref UInt32 lpdwModemStatus);
         [DllImport("FTD2XX.dll")]
-        static extern FT_STATUS FT_Purge(uint ftHandle, UInt32 dwMask);
+        protected static extern FT_STATUS FT_Purge(uint ftHandle, UInt32 dwMask);
         [DllImport("FTD2XX.dll")]
-        static extern FT_STATUS FT_SetBreakOn(uint ftHandle);
+        protected static extern FT_STATUS FT_SetBreakOn(uint ftHandle);
         [DllImport("FTD2XX.dll")]
-        static extern FT_STATUS FT_SetBreakOff(uint ftHandle);
+        protected static extern FT_STATUS FT_SetBreakOff(uint ftHandle);
         [DllImport("FTD2XX.dll")]
         static extern FT_STATUS FT_GetStatus(uint ftHandle, ref UInt32 lpdwAmountInRxQueue, ref UInt32 lpdwAmountInTxQueue, ref UInt32 lpdwEventStatus);
         [DllImport("FTD2XX.dll")]
@@ -93,7 +89,7 @@ namespace Sniper.Lighting.DMX
         [DllImport("FTD2XX.dll")]
         static extern unsafe FT_STATUS FT_GetQueueStatus(FT_HANDLE ftHandle, ref UInt32 lpdwAmountInRxQueue);
         [DllImport("FTD2XX.dll")]
-        static extern unsafe FT_STATUS FT_GetLatencyTimer(FT_HANDLE ftHandle, ref byte pucTimer);
+        protected static extern unsafe FT_STATUS FT_GetLatencyTimer(FT_HANDLE ftHandle, ref byte pucTimer);
         [DllImport("FTD2XX.dll")]
         static extern unsafe FT_STATUS FT_SetLatencyTimer(FT_HANDLE ftHandle, byte ucTimer);
         [DllImport("FTD2XX.dll")]
@@ -105,31 +101,32 @@ namespace Sniper.Lighting.DMX
         [DllImport("FTD2XX.dll")]
         static extern unsafe FT_STATUS FT_GetDeviceInfo(FT_HANDLE ftHandle, ref FT_DEVICE ftDevice, ref UInt32 deviceID, void* SerialNumber, void* Description, UInt32 Flag);
         [DllImport("FTD2XX.dll")]
-        static extern FT_STATUS FT_GetDriverVersion(FT_HANDLE ftHandle, ref uint lpdwVersion);
+        protected static extern FT_STATUS FT_GetDriverVersion(FT_HANDLE ftHandle, ref uint lpdwVersion);
         [DllImport("FTD2XX.dll")]
-        static extern FT_STATUS FT_SetTimeouts(FT_HANDLE ftHandle, uint ReadTimeout, uint WriteTimeout);
+        protected static extern FT_STATUS FT_SetTimeouts(FT_HANDLE ftHandle, uint ReadTimeout, uint WriteTimeout);
 
-        private static Thread writeDMXBUfferThread;
-        public static event StateChangedEventHandler StateChanged;
+        protected Thread writeDMXBUfferThread;
+        public event StateChangedEventHandler StateChanged;
         
         public DMXProUSB()
         {
             
         }
         
-        public static bool start()
+        public virtual bool start()
         {
             return start(Settings.Default.DMXChannelCount);
         }
-        private static DmxLimits limits;
-        public static void setLimits(DmxLimits newLimits)
+
+        protected DmxLimits limits;
+        public void setLimits(DmxLimits newLimits)
         {
             limits = newLimits;
         }
-        static object startLock = null;
+        protected object startLock = null;
 
         [System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptions]
-        private static bool start(int busLength)
+        protected virtual bool start(int busLength)
         {
             if (startLock == null)
             {
@@ -191,7 +188,7 @@ namespace Sniper.Lighting.DMX
             return false;
         }
 
-        public static void stop()
+        public virtual void stop()
         {
             byte value = 0;
             for (int channel = 0; channel < buffer.Length; channel++)
@@ -201,11 +198,15 @@ namespace Sniper.Lighting.DMX
                     if (value < limits.Min[channel]) value = limits.Min[channel];
                 }
                 buffer[channel] = value;
-            }
+            } 
+            newData = true;
             Thread.Sleep(500);
+            FTDI_ClosePort();
+            FT_Close(handle);
+            Connected = false;
             done = true;
         }
-        public static byte GetDmxValue(int channel)
+        public byte GetDmxValue(int channel)
         {
             if (buffer != null)
             {
@@ -217,7 +218,7 @@ namespace Sniper.Lighting.DMX
             return 0;
         }
 
-        public static void SetDmxValue(int channel, byte value)
+        public void SetDmxValue(int channel, byte value)
         {
             if (buffer != null)
             {
@@ -248,14 +249,14 @@ namespace Sniper.Lighting.DMX
             }
         }
         
-        public static byte[] GetCurrentBuffer()
+        public byte[] GetCurrentBuffer()
         {
             return (byte[])buffer.Clone();
         }
 
         
-        private static bool newData = false;
-        private static void writeDMXBuffer()
+        protected bool newData = false;
+        protected virtual void writeDMXBuffer()
         {
             while (!done)
             {
@@ -289,7 +290,7 @@ namespace Sniper.Lighting.DMX
             done = false;
         }
 
-        private static int write(uint handle, byte[] data, int length)
+        protected int write(uint handle, byte[] data, int length)
         {
             IntPtr ptr = Marshal.AllocHGlobal((int)length);
             Marshal.Copy(data, 0, ptr, (int)length);
@@ -307,7 +308,7 @@ namespace Sniper.Lighting.DMX
             return (int)bytesWritten;
         }
 
-        private static FT_STATUS read(uint handle, byte[] data, int length, ref int bytesRead)
+        private FT_STATUS read(uint handle, byte[] data, int length, ref int bytesRead)
         {
             uint uintBytesRead = 0;
             IntPtr ptr = Marshal.AllocHGlobal((int)length);
@@ -323,7 +324,7 @@ namespace Sniper.Lighting.DMX
             return FT_STATUS.FT_OK;
         }
 
-        struct DMXUSBPROParamsType
+        protected struct DMXUSBPROParamsType
         {
             public byte UserSizeLSB;
             public byte UserSizeMSB;
@@ -332,7 +333,7 @@ namespace Sniper.Lighting.DMX
             public byte RefreshRate;
         }
 
-        private static bool FTDI_OpenDevice(int device_num, ref FT_STATUS status)
+        protected virtual bool FTDI_OpenDevice(int device_num, ref FT_STATUS status)
         {
             //return false;
 
@@ -411,7 +412,7 @@ namespace Sniper.Lighting.DMX
                         PRO_Params.BreakTime = paramsBuff[2];
                         PRO_Params.MaBTime = paramsBuff[3];
                         PRO_Params.RefreshRate = paramsBuff[4];
-                        //// Check Response
+                        // Check Response
                         if (res == NO_RESPONSE)
                         {
                             //Receive Widget Response packet
@@ -461,7 +462,7 @@ namespace Sniper.Lighting.DMX
             }
         }
 
-        private static DevData[] DevInformation;
+        private DevData[] DevInformation;
         private class DevData
         {
             public string DevDescription;
@@ -475,13 +476,13 @@ namespace Sniper.Lighting.DMX
          * Purpose  : Closes the Open DMX USB PRO Device Handle
          * Parameters: none
          **/
-        static void FTDI_ClosePort()
+        void FTDI_ClosePort()
         {
             if (handle != null)
                 FT_Close(handle);
         }
 
-        private static Int16 SearchDevice()
+        private Int16 SearchDevice()
         {
             //cmbDevList.SelectedIndex = iCurrentIndex;
             FT_HANDLE ftHandle = new FT_HANDLE();
@@ -585,7 +586,7 @@ namespace Sniper.Lighting.DMX
          * Parameters: Label, Pointer to Data Structure, Length of Data
          * Modified by Gareth Evans, Sniper Systems to convert this to c# for use
         */
-        private static bool FTDI_SendData(FT_HANDLE handle, int label, byte[] data, ref FT_STATUS status)
+        protected virtual bool FTDI_SendData(FT_HANDLE handle, int label, byte[] data, ref FT_STATUS status)
         {
             if (Connected)
             {
@@ -610,7 +611,7 @@ namespace Sniper.Lighting.DMX
             return false;
         }
 
-        private static byte[] GetProHeader(int label, int length)
+        protected byte[] GetProHeader(int label, int length)
         {
             byte[] header = new byte[DMX_HEADER_LENGTH];
             header[0] = DMX_START_CODE;
@@ -619,7 +620,7 @@ namespace Sniper.Lighting.DMX
             header[3] = (byte)(length >> BYTE_LENGTH);
             return header;
         }
-        public static void Dispose()
+        public void Dispose()
         {
             //if (Connected)
             //{
@@ -650,7 +651,7 @@ namespace Sniper.Lighting.DMX
          * Parameters: Label, Pointer to Data Structure, Length of Data
          * Modified by Gareth Evans, Sniper Systems to convert this to c# for use
          **/
-        static bool FTDI_ReceiveData(FT_HANDLE handle, int label, byte[] data, int expected_length)
+        bool FTDI_ReceiveData(FT_HANDLE handle, int label, byte[] data, int expected_length)
         {
             if (Connected)
             {
@@ -699,7 +700,8 @@ namespace Sniper.Lighting.DMX
             }
             return false;
         }
-        private enum FT_STATUS
+
+        protected enum FT_STATUS
         {
             FT_OK = 0,
             FT_INVALID_HANDLE,

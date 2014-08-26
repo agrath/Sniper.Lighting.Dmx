@@ -30,6 +30,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -44,6 +45,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Channel.cs" />
+    <Compile Include="Class1.cs" />
+    <Compile Include="DmxControllerInstance.cs" />
     <Compile Include="DmxLimits.cs" />
     <Compile Include="DMXProUSB.cs">
       <SubType>Code</SubType>
@@ -55,12 +58,14 @@
     <Compile Include="Effect.cs" />
     <Compile Include="DmxController.cs" />
     <Compile Include="MathHelper.cs" />
+    <Compile Include="OpenDMXUSB.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="Pulse.cs" />
     <Compile Include="StateChangedEventArgs.cs" />
     <Compile Include="StateChangedEventHandler.cs" />
   </ItemGroup>

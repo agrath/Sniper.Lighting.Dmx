@@ -8,28 +8,55 @@ namespace Sniper.Lighting.DMX
 {
     public class Effect : IDisposable
     {
-        public int Channel;
-        public byte OriginalValue;
+        protected int Channel;
+        protected byte OriginalValue;
         public byte NewValue;
-        public int Duration;
-        public EasingType EasingTypeIn;
-        public EasingType EasingTypeOut;
-        public EasingExtents Extents;
-        public object UserData;
-        public Guid UniqueIdentifier;
+        protected int Duration;
+        protected EasingType EasingTypeIn;
+        protected EasingType EasingTypeOut;
+        protected EasingExtents Extents;
+        protected object UserData;
+        protected Guid UniqueIdentifier;
         //public Sniper.Lighting.DMX.DMXProUSB.EaseDMXValueComplete OnComplete;
         //public Sniper.Lighting.DMX.DMXProUSB.EaseDMXValueStep OnStep;
         //internal Sniper.Lighting.DMX.DMXProUSB.InternalEaseDMXValueComplete InternalOnComplete;
-        public event EventHandler<EffectEventArgs> OnStep;
-        public event EventHandler<EffectEventArgs> OnStart;
-        public event EventHandler<EffectEventArgs> OnComplete;
+        public event EventHandler<EffectEventArgs> Step;
+        public event EventHandler<EffectEventArgs> Starting;
+        public event EventHandler<EffectEventArgs> Complete;
         public DateTime FromTimestamp;
         public DateTime ToTimestamp;
-        private TimeSpan duration;
-        private int steps;
-        private int currentStep;
+        protected TimeSpan duration;
+        protected int steps;
+        protected int currentStep;
         public bool Running { get { return running;  } }
-        private bool running;
+        protected bool running;
+
+        protected virtual void OnStep(EffectEventArgs e)
+        {
+            EventHandler<EffectEventArgs> handler = Step;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void OnStart(EffectEventArgs e)
+        {
+            EventHandler<EffectEventArgs> handler = Starting;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void OnComplete(EffectEventArgs e)
+        {
+            EventHandler<EffectEventArgs> handler = Complete;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
 
         //private Thread thread;
         internal Effect(int Channel, byte OriginalValue, byte NewValue, int Duration, EasingType EasingTypeIn, EasingType EasingTypeOut, EasingExtents Extents)
@@ -47,18 +74,19 @@ namespace Sniper.Lighting.DMX
             //thread = new Thread(new ParameterizedThreadStart(ThreadAction));
             this.UniqueIdentifier = Guid.NewGuid();
         }
+
         public void StartIn(int delay)
         {
             var handle = this;
             FromTimestamp = DateTime.Now.AddMilliseconds(delay);
-            ToTimestamp = FromTimestamp.AddMilliseconds(handle.Duration);
+            ToTimestamp = FromTimestamp.Add(TimeSpan.FromMilliseconds(Duration));
             duration = ToTimestamp - FromTimestamp;
             steps = 255;
             currentStep = 0;
             running = true;
-            if (handle.OnStart != null)
+            if (handle.Starting != null)
             {
-                handle.OnStart(this, new EffectEventArgs()
+                handle.Starting(this, new EffectEventArgs()
                 {
                     Channel = handle.Channel,
                     Direction = handle.OriginalValue > handle.NewValue ? -1 : 1,
@@ -67,11 +95,13 @@ namespace Sniper.Lighting.DMX
                 });
             }
         }
+
         public void Start()
         {
             StartIn(0);
         }
-        public byte GetCurrentValue()
+
+        public virtual byte GetCurrentValue()
         {
             if (running)
             {
@@ -109,9 +139,9 @@ namespace Sniper.Lighting.DMX
                 {
                     if (currentValueRounded != this.NewValue)
                     {
-                        if (this.OnStep != null)
+                        if (this.Step != null)
                         {
-                            this.OnStep(this, new EffectEventArgs()
+                            this.Step(this, new EffectEventArgs()
                             {
                                 Channel = this.Channel,
                                 Direction = this.OriginalValue > currentValueRounded ? -1 : 1,
@@ -135,9 +165,9 @@ namespace Sniper.Lighting.DMX
                     //Console.WriteLine("{0}: Easing handle completing for channel {1} with value {2} ({3})", DateTime.Now, handle.Channel, NewValue, (handle.OriginalValue > handle.NewValue ? "OUT" : "IN"));
 
                     running = false;
-                    if (this.OnComplete != null)
+                    if (this.Complete != null)
                     {
-                        this.OnComplete(this, new EffectEventArgs()
+                        this.Complete(this, new EffectEventArgs()
                         {
                             Channel = this.Channel,
                             Direction = this.OriginalValue > (byte)this.NewValue ? -1 : 1,
@@ -159,23 +189,26 @@ namespace Sniper.Lighting.DMX
         {
             Stop(false);
         }
+
         public void Stop(bool resetToOriginal)
         {
             running = false; 
             if (this.Channel == 0) Console.WriteLine("Stop called for channel 0");
             var handle = this;
             //make sure we reached the final value
-            DMXProUSB.SetDmxValue(this.Channel, (byte)handle.NewValue);
-           
+            //DMXProUSB.SetDmxValue(this.Channel, (byte)handle.NewValue);
+            NewValue = 0;
+
             if (resetToOriginal)
             {
-                DMXProUSB.SetDmxValue(Channel, OriginalValue);
+                NewValue = OriginalValue;
+                //DMXProUSB.SetDmxValue(Channel, OriginalValue);
             }
             
-            if (handle.OnComplete != null)
+            if (handle.Complete != null)
             {
               
-                handle.OnComplete(this, new EffectEventArgs()
+                handle.Complete(this, new EffectEventArgs()
                 {
                     Channel = handle.Channel,
                     Direction = handle.OriginalValue > (byte)handle.NewValue ? -1 : 1,
