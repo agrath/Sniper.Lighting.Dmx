@@ -20,10 +20,10 @@ namespace Sniper.Lighting.DMX
         private int bytesWritten = 0;
         protected FT_STATUS status;
 
-        private const byte BITS_8 = 8;
-        private const byte STOP_BITS_2 = 2;
-        private const byte PARITY_NONE = 0;
-        private const UInt16 FLOW_NONE = 0;
+        protected const byte BITS_8 = 8;
+        protected const byte STOP_BITS_2 = 2;
+        protected const byte PARITY_NONE = 0;
+        protected const UInt16 FLOW_NONE = 0;
         protected const byte PURGE_RX = 1;
         protected const byte PURGE_TX = 2;
         private const UInt32 FT_LIST_NUMBER_ONLY = 0x80000000;
@@ -61,9 +61,9 @@ namespace Sniper.Lighting.DMX
         [DllImport("FTD2XX.dll")]
         static extern FT_STATUS FT_Write(uint ftHandle, IntPtr lpBuffer, UInt32 dwBytesToRead, ref UInt32 lpdwBytesWritten);
         [DllImport("FTD2XX.dll")]
-        static extern FT_STATUS FT_SetDataCharacteristics(uint ftHandle, byte uWordLength, byte uStopBits, byte uParity);
+        protected static extern FT_STATUS FT_SetDataCharacteristics(uint ftHandle, byte uWordLength, byte uStopBits, byte uParity);
         [DllImport("FTD2XX.dll")]
-        static extern FT_STATUS FT_SetFlowControl(uint ftHandle, char usFlowControl, byte uXon, byte uXoff);
+        protected static extern FT_STATUS FT_SetFlowControl(uint ftHandle, char usFlowControl, byte uXon, byte uXoff);
         [DllImport("FTD2XX.dll")]
         static extern FT_STATUS FT_GetModemStatus(uint ftHandle, ref UInt32 lpdwModemStatus);
         [DllImport("FTD2XX.dll")]
@@ -73,11 +73,11 @@ namespace Sniper.Lighting.DMX
         [DllImport("FTD2XX.dll")]
         protected static extern FT_STATUS FT_SetBreakOff(uint ftHandle);
         [DllImport("FTD2XX.dll")]
-        static extern FT_STATUS FT_GetStatus(uint ftHandle, ref UInt32 lpdwAmountInRxQueue, ref UInt32 lpdwAmountInTxQueue, ref UInt32 lpdwEventStatus);
+        protected static extern FT_STATUS FT_GetStatus(uint ftHandle, ref UInt32 lpdwAmountInRxQueue, ref UInt32 lpdwAmountInTxQueue, ref UInt32 lpdwEventStatus);
         [DllImport("FTD2XX.dll")]
-        static extern FT_STATUS FT_ResetDevice(uint ftHandle);
+        protected static extern FT_STATUS FT_ResetDevice(uint ftHandle);
         [DllImport("FTD2XX.dll")]
-        static extern FT_STATUS FT_SetDivisor(uint ftHandle, char usDivisor);
+        protected static extern FT_STATUS FT_SetDivisor(uint ftHandle, char usDivisor);
         [DllImport("FTD2XX.dll")]
         static extern unsafe FT_STATUS FT_SetDtr(FT_HANDLE ftHandle);
         [DllImport("FTD2XX.dll")]
@@ -85,7 +85,7 @@ namespace Sniper.Lighting.DMX
         [DllImport("FTD2XX.dll")]
         static extern unsafe FT_STATUS FT_SetRts(FT_HANDLE ftHandle);
         [DllImport("FTD2XX.dll")]
-        static extern unsafe FT_STATUS FT_ClrRts(FT_HANDLE ftHandle);
+        protected static extern unsafe FT_STATUS FT_ClrRts(FT_HANDLE ftHandle);
         [DllImport("FTD2XX.dll")]
         static extern unsafe FT_STATUS FT_GetQueueStatus(FT_HANDLE ftHandle, ref UInt32 lpdwAmountInRxQueue);
         [DllImport("FTD2XX.dll")]

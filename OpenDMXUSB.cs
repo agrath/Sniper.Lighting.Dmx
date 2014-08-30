@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using FT_HANDLE = System.UInt32;
@@ -10,7 +11,6 @@ namespace Sniper.Lighting.DMX
 {
     public class OpenDMXUSB : DMXProUSB
     {
-
         public new bool start()
         {
             return start(Settings.Default.DMXChannelCount);
@@ -111,8 +111,17 @@ namespace Sniper.Lighting.DMX
                 else
                 {
                     Connected = true;
+                    status = FT_ResetDevice(handle);
+                    status = FT_SetDivisor(handle, (char)12);  // set baud rate
+                    status = FT_SetDataCharacteristics(handle, BITS_8, STOP_BITS_2, PARITY_NONE);
+                    status = FT_SetFlowControl(handle, (char)FLOW_NONE, 0, 0);
+                    status = FT_ClrRts(handle);
+                    status = FT_Purge(handle, PURGE_TX);
+                    status = FT_Purge(handle, PURGE_RX);
+
                     // GET D2XX Driver Version
                     status = FT_GetDriverVersion(handle, ref version);
+
                     if (status == FT_STATUS.FT_OK)
                     {
                         major_ver = (uint)version >> 16;
@@ -122,6 +131,7 @@ namespace Sniper.Lighting.DMX
                     }
                     else
                         Console.WriteLine("Unable to Get D2XX Driver Version");
+
 
                     //// GET Latency Timer
                     status = FT_GetLatencyTimer(handle, ref latencyTimer);

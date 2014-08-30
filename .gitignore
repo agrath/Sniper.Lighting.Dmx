@@ -4,3 +4,6 @@
 *.cache
 obj/Debug/Sniper.Lighting.DMX.csproj.FileListAbsolute.txt
 *.txt
+packages
+Sniper.Lighting.DMX.sln
+Sniper.Lighting.DMX.v12.suo
