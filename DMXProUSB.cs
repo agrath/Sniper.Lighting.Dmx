@@ -258,7 +258,7 @@ namespace Sniper.Lighting.DMX
                 }
             }
             IOrderedEnumerable<QueueBuffer> orderedBuffers = buffers.OrderBy(queueBuffer => queueBuffer.CurrentPriority);
-            
+            byte[] newBuffer = new byte[busLength];
             foreach(var queueBuffer in orderedBuffers)
             {
                 byte[] queueBufferBuffer = queueBuffer.Buffer;
@@ -267,10 +267,11 @@ namespace Sniper.Lighting.DMX
                     byte value = queueBufferBuffer[channel];
                     if(value != 0)
                     {
-                        buffer[channel] = value;
+                        newBuffer[channel] = value;
                     }
                 }
             }
+            newBuffer.CopyTo(buffer, 0);
 
             bool bufferChanged = buffer.SequenceEqual(currentBuffer);
             if (StateChanged != null && bufferChanged)
