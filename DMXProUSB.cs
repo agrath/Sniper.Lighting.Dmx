@@ -247,9 +247,10 @@ namespace Sniper.Lighting.DMX
 
             //copy the buffers to an array (fixed length) for sorting & merge - so we can unlock the dictionary sooner
             QueueBuffer[] buffers = null;
+            var queueCount = queueBuffers.Count;
             lock (queueBuffers)
             {
-                buffers = new QueueBuffer[queueBuffers.Count];
+                buffers = new QueueBuffer[queueCount];
                 int index = 0;
                 foreach (var queueBuffer in queueBuffers)
                 {
@@ -257,9 +258,18 @@ namespace Sniper.Lighting.DMX
                 }
             }
             IOrderedEnumerable<QueueBuffer> orderedBuffers = buffers.OrderBy(queueBuffer => queueBuffer.CurrentPriority);
+            
             foreach(var queueBuffer in orderedBuffers)
             {
-                queueBuffer.Buffer.CopyTo(buffer, 0);
+                byte[] queueBufferBuffer = queueBuffer.Buffer;
+                for (int channel = 0; channel < busLength; channel++)
+                {
+                    byte value = queueBufferBuffer[channel];
+                    if(value != 0)
+                    {
+                        buffer[channel] = value;
+                    }
+                }
             }
 
             bool bufferChanged = buffer.SequenceEqual(currentBuffer);
