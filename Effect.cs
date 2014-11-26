@@ -59,10 +59,18 @@ namespace Sniper.Lighting.DMX
         }
 
         //private Thread thread;
-        internal Effect(int Channel, byte OriginalValue, byte NewValue, int Duration, EasingType EasingTypeIn, EasingType EasingTypeOut, EasingExtents Extents)
+        internal Effect(int Channel, byte? OriginalValue, byte NewValue, int Duration, EasingType EasingTypeIn, EasingType EasingTypeOut, EasingExtents Extents)
         {
             this.Channel = Channel;
-            this.OriginalValue = OriginalValue;
+            //disable revert as multiple effects on same channels simultaneously cause bugs, if you want a light to revert to a non off state, have an effect which never ends
+            if (OriginalValue != null)
+            {
+                this.OriginalValue = OriginalValue.Value;
+            }
+            else
+            {
+                this.OriginalValue = 0;
+            }
             this.NewValue = NewValue;
             this.Duration = Duration;
             this.EasingTypeIn = EasingTypeIn;

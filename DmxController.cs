@@ -71,7 +71,7 @@ namespace Sniper.Lighting.DMX
 
         public static void SetDmxValue(int channel, byte value, DateTime when)
         {
-            Effect handle = new Effect(channel, Channels[channel].Value, value, 0, EasingType.Linear, EasingType.Linear, EasingExtents.EaseInOut);
+            Effect handle = new Effect(channel, null, value, 0, EasingType.Linear, EasingType.Linear, EasingExtents.EaseInOut);
             Channels[channel].QueueEffect(handle);
             handle.StartIn((int)(when - DateTime.Now).TotalMilliseconds);          
         }
@@ -83,9 +83,8 @@ namespace Sniper.Lighting.DMX
 
         public static void SetDmxValue(int channel, byte value, int revertInDuration)
         {
-            byte current = GetDmxValue(channel);
             SetDmxValue(channel, value);
-            SetDmxValue(channel, current, DateTime.Now.AddMilliseconds(revertInDuration));
+            SetDmxValue(channel, 0, DateTime.Now.AddMilliseconds(revertInDuration));
         }
 
         public static Effect PulseDmxValue(int channel, byte startValue, byte endValue, int duration, EasingType typeIn, EasingType typeOut, EasingExtents extents)
