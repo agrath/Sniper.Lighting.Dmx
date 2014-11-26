@@ -15,6 +15,8 @@ namespace Sniper.Lighting.DMX
     public class DMXProUSB
     {
         protected byte[] buffer;
+        private int busLength;
+        protected Dictionary<Guid, QueueBuffer> queueBuffers;
         protected uint handle;
         protected bool done = false;
         private int bytesWritten = 0;
@@ -107,12 +109,12 @@ namespace Sniper.Lighting.DMX
 
         protected Thread writeDMXBUfferThread;
         public event StateChangedEventHandler StateChanged;
-        
+
         public DMXProUSB()
         {
-            
+            queueBuffers = new Dictionary<Guid, QueueBuffer>();
         }
-        
+
         public virtual bool start()
         {
             return start(Settings.Default.DMXChannelCount);
@@ -141,6 +143,7 @@ namespace Sniper.Lighting.DMX
                         if (buffer == null)
                         {
                             buffer = new byte[busLength]; // can be any length up to 512. The shorter the faster.
+                            this.busLength = busLength;
                         }
                         handle = 0;
                         if (FTDI_OpenDevice(0, ref status))
@@ -155,11 +158,12 @@ namespace Sniper.Lighting.DMX
                                     value = 0;
                                     if (limits != null)
                                     {
-                                        if (value < limits.Min[channel]) value = limits.Min[channel];
+                                        if (value < limits.Min[channel])
+                                            value = limits.Min[channel];
                                     }
-                                    SetDmxValue(channel, value);
+                                    //initial state of channel is set here
+                                    SetDmxValue(channel, value, Guid.Empty, 1);
                                 }
-
 
                                 writeDMXBUfferThread = new Thread(new ThreadStart(writeDMXBuffer));
                                 writeDMXBUfferThread.IsBackground = true;
@@ -195,10 +199,11 @@ namespace Sniper.Lighting.DMX
             {
                 if (limits != null)
                 {
-                    if (value < limits.Min[channel]) value = limits.Min[channel];
+                    if (value < limits.Min[channel])
+                        value = limits.Min[channel];
                 }
                 buffer[channel] = value;
-            } 
+            }
             newData = true;
             Thread.Sleep(500);
             FTDI_ClosePort();
@@ -217,44 +222,105 @@ namespace Sniper.Lighting.DMX
             }
             return 0;
         }
-
-        public void SetDmxValue(int channel, byte value)
+        private byte[] GetBufferForQueue(Guid queue, int priority)
         {
-            if (buffer != null)
+            QueueBuffer queueBuffer = null;
+            lock (queueBuffers)
             {
-                if (channel < buffer.Length)
+                if (queueBuffers.ContainsKey(queue))
+                {
+                    queueBuffer = queueBuffers[queue];
+                    queueBuffer.CurrentPriority = priority;
+                }
+                else
+                {
+                    queueBuffer = new QueueBuffer(busLength);
+                    queueBuffer.CurrentPriority = priority;
+                    queueBuffers.Add(queue, queueBuffer);
+                }
+                return queueBuffer.Buffer;
+            }
+        }
+        protected bool BuildBufferFromQueues()
+        {
+            byte[] currentBuffer = GetCurrentBuffer();
+
+            //copy the buffers to an array (fixed length) for sorting & merge - so we can unlock the dictionary sooner
+            QueueBuffer[] buffers = null;
+            lock (queueBuffers)
+            {
+                buffers = new QueueBuffer[queueBuffers.Count];
+                int index = 0;
+                foreach (var queueBuffer in queueBuffers)
+                {
+                    buffers[index++] = queueBuffer.Value;
+                }
+            }
+            IOrderedEnumerable<QueueBuffer> orderedBuffers = buffers.OrderBy(queueBuffer => queueBuffer.CurrentPriority);
+            foreach(var queueBuffer in orderedBuffers)
+            {
+                queueBuffer.Buffer.CopyTo(buffer, 0);
+            }
+
+            bool bufferChanged = buffer.SequenceEqual(currentBuffer);
+            if (StateChanged != null && bufferChanged)
+            {
+                StateChanged(null, new StateChangedEventArgs()
+                {
+                    CurrentState = buffer
+                });
+            }
+
+            return bufferChanged;
+        }
+
+        public void SetDmxValue(int channel, byte value, Guid queue, int priority)
+        {
+            //using the queue id, get the buffer
+            byte[] queueBuffer = GetBufferForQueue(queue, priority);
+            if (queueBuffer != null)
+            {
+                if (channel < queueBuffer.Length)
                 {
                     if (limits != null)
                     {
-                        if (value < limits.Min[channel]) value = limits.Min[channel];
-                        if (value > limits.Max[channel]) value = limits.Max[channel];
+                        if (value < limits.Min[channel])
+                            value = limits.Min[channel];
+                        if (value > limits.Max[channel])
+                            value = limits.Max[channel];
                     }
                     else
                     {
-                        if (value < 0) value = 0;
-                        if (value > 255) value = 255;
+                        if (value < 0)
+                            value = 0;
+                        if (value > 255)
+                            value = 255;
                     }
-                    if (buffer[channel] != value)
+                    if (queueBuffer[channel] != value)
                     {
-                        buffer[channel] = value;
+                        queueBuffer[channel] = value;
                         newData = true;
                     }
-
-                    if (StateChanged != null)
-                    {
-                        StateChanged(null, new StateChangedEventArgs() { CurrentState = buffer });
-                    }
-
                 }
             }
         }
-        
+
+        //write merge loop
+        /*
+         *  if (StateChanged != null)
+                    {
+                        StateChanged(null, new StateChangedEventArgs()
+                        {
+                            CurrentState = buffer
+                        });
+                    }
+         */
+
         public byte[] GetCurrentBuffer()
         {
             return (byte[])buffer.Clone();
         }
 
-        
         protected bool newData = false;
         protected virtual void writeDMXBuffer()
         {
@@ -262,6 +328,7 @@ namespace Sniper.Lighting.DMX
             {
                 try
                 {
+                    newData = BuildBufferFromQueues();
                     if (Connected)
                     {
                         if (newData)
@@ -528,7 +595,8 @@ namespace Sniper.Lighting.DMX
 
                     if (ftStatus == FT_STATUS.FT_OK)
                     {
-                        MyText += "\tTim="; MyText += Tim;
+                        MyText += "\tTim=";
+                        MyText += Tim;
                     }
                     else
                     {
@@ -554,13 +622,15 @@ namespace Sniper.Lighting.DMX
 
                     for (int j = 0; j < SerialNumber.Length; j++)
                     {
-                        if ((char)SerialNumber[j] == '\0') break;
+                        if ((char)SerialNumber[j] == '\0')
+                            break;
                         devSerial += (char)SerialNumber[j];
                     }
 
                     for (int j = 0; j < sDescription.Length; j++)
                     {
-                        if ((char)sDescription[j] == '\0') break;
+                        if ((char)sDescription[j] == '\0')
+                            break;
                         devDescription += (char)sDescription[j];
                     }
 
@@ -625,7 +695,7 @@ namespace Sniper.Lighting.DMX
             //if (Connected)
             //{
             done = true;
-            
+
             //}
             Thread.Sleep(400);
             if (writeDMXBUfferThread != null)
@@ -669,28 +739,35 @@ namespace Sniper.Lighting.DMX
                     while (singleBuff[0] != DMX_START_CODE)
                     {
                         status = read(handle, singleBuff, ONE_BYTE, ref bytes_read);
-                        if (bytes_read == 0) return NO_RESPONSE;
+                        if (bytes_read == 0)
+                            return NO_RESPONSE;
                     }
                     status = read(handle, singleBuff, ONE_BYTE, ref bytes_read);
-                    if (bytes_read == 0) return NO_RESPONSE;
+                    if (bytes_read == 0)
+                        return NO_RESPONSE;
                 }
                 // Read the rest of the Header Byte by Byte -- Get Length
                 status = read(handle, singleBuff, ONE_BYTE, ref bytes_read);
-                if (bytes_read == 0) return NO_RESPONSE;
+                if (bytes_read == 0)
+                    return NO_RESPONSE;
                 length = singleBuff[0];
                 status = read(handle, singleBuff, ONE_BYTE, ref bytes_read);
-                if (status != FT_STATUS.FT_OK) return NO_RESPONSE;
+                if (status != FT_STATUS.FT_OK)
+                    return NO_RESPONSE;
                 length += ((uint)singleBuff[0]) << BYTE_LENGTH;
                 // Check Length is not greater than allowed
                 if (length > DMX_PACKET_SIZE)
                     return NO_RESPONSE;
                 // Read the actual Response Data
                 status = read(handle, buffer, (int)length, ref bytes_read);
-                if (bytes_read != length) return NO_RESPONSE;
+                if (bytes_read != length)
+                    return NO_RESPONSE;
                 // Check The End Code
                 status = read(handle, singleBuff, ONE_BYTE, ref bytes_read);
-                if (bytes_read == 0) return NO_RESPONSE;
-                if (singleBuff[0] != DMX_END_CODE) return NO_RESPONSE;
+                if (bytes_read == 0)
+                    return NO_RESPONSE;
+                if (singleBuff[0] != DMX_END_CODE)
+                    return NO_RESPONSE;
                 // Copy The Data read to the buffer passed
                 Array.ConstrainedCopy(buffer, 0, data, 0, data.Length);
 
@@ -732,7 +809,7 @@ namespace Sniper.Lighting.DMX
             FT_DEVICE_2232C
         };
 
-        
+
     }
 
 

@@ -26,7 +26,8 @@ namespace Sniper.Lighting.DMX
                     Channel c = new Channel(i, 
                         (int channel, byte value) => {
                             //Console.WriteLine("{0}: DMXProUSB.SetDmxValue({1},{2})", DateTime.Now, channel, value);
-                            dmxDevice.SetDmxValue(channel, value);
+                            //initial state of channel is set here
+                            dmxDevice.SetDmxValue(channel, value, Guid.Empty, 1);
                         });
                     Channels.Add(c);
                 }

@@ -48,7 +48,8 @@ namespace Sniper.Lighting.DMX
                                     {
                                         if (value < limits.Min[channel]) value = limits.Min[channel];
                                     }
-                                    SetDmxValue(channel, value);
+                                    //initial state of channel is set here
+                                    SetDmxValue(channel, value, Guid.Empty, 1);
                                 }
 
 
@@ -224,6 +225,7 @@ namespace Sniper.Lighting.DMX
                 {
                     if (Connected)
                     {
+                        BuildBufferFromQueues();
                         if (newData)
                         {
                             FT_SetBreakOn(handle);
