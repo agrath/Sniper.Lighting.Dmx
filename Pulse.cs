@@ -8,8 +8,8 @@ namespace Sniper.Lighting.DMX
     public class Pulse : Effect
     {
          //private Thread thread;
-        internal Pulse(int Channel, byte OriginalValue, byte NewValue, int Duration, EasingType EasingTypeIn, EasingType EasingTypeOut, EasingExtents Extents) :
-            base(Channel, OriginalValue, NewValue, Duration, EasingTypeIn, EasingTypeOut, Extents)
+        internal Pulse(Guid Queue, int Channel, int Priority, byte OriginalValue, byte NewValue, int Duration, EasingType EasingTypeIn, EasingType EasingTypeOut, EasingExtents Extents) :
+            base(Queue, Channel, Priority, OriginalValue, NewValue, Duration, EasingTypeIn, EasingTypeOut, Extents)
         {
         }
 

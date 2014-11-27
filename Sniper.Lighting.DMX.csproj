@@ -44,9 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Channel.cs" />
     <Compile Include="DMXDeviceType.cs" />
-    <Compile Include="DmxControllerInstance.cs" />
     <Compile Include="DmxLimits.cs" />
     <Compile Include="DMXProUSB.cs">
       <SubType>Code</SubType>
@@ -69,6 +67,7 @@
     <Compile Include="QueueBuffer.cs" />
     <Compile Include="StateChangedEventArgs.cs" />
     <Compile Include="StateChangedEventHandler.cs" />
+    <Compile Include="ThreadSafeList.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

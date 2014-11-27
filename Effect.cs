@@ -8,7 +8,8 @@ namespace Sniper.Lighting.DMX
 {
     public class Effect : IDisposable
     {
-        protected int Channel;
+        public int Channel;
+        public int Priority;
         protected byte OriginalValue;
         public byte NewValue;
         protected int Duration;
@@ -28,6 +29,7 @@ namespace Sniper.Lighting.DMX
         protected TimeSpan duration;
         protected int steps;
         protected int currentStep;
+        public Guid Queue;
         public bool Running { get { return running;  } }
         protected bool running;
 
@@ -59,8 +61,10 @@ namespace Sniper.Lighting.DMX
         }
 
         //private Thread thread;
-        internal Effect(int Channel, byte? OriginalValue, byte NewValue, int Duration, EasingType EasingTypeIn, EasingType EasingTypeOut, EasingExtents Extents)
+        internal Effect(Guid queue, int Channel, int Priority, byte? OriginalValue, byte NewValue, int Duration, EasingType EasingTypeIn, EasingType EasingTypeOut, EasingExtents Extents)
         {
+            this.Queue = queue;
+            this.Priority = Priority;
             this.Channel = Channel;
             //disable revert as multiple effects on same channels simultaneously cause bugs, if you want a light to revert to a non off state, have an effect which never ends
             if (OriginalValue != null)

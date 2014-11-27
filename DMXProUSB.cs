@@ -15,7 +15,7 @@ namespace Sniper.Lighting.DMX
     public class DMXProUSB
     {
         protected byte[] buffer;
-        private int busLength;
+        protected int busLength;
         protected Dictionary<Guid, QueueBuffer> queueBuffers;
         protected uint handle;
         protected bool done = false;
@@ -112,12 +112,12 @@ namespace Sniper.Lighting.DMX
 
         public DMXProUSB()
         {
+            busLength = Settings.Default.DMXChannelCount;
+            if (buffer == null)
+            {
+                buffer = new byte[busLength]; // can be any length up to 512. The shorter the faster.
+            }
             queueBuffers = new Dictionary<Guid, QueueBuffer>();
-        }
-
-        public virtual bool start()
-        {
-            return start(Settings.Default.DMXChannelCount);
         }
 
         protected DmxLimits limits;
@@ -128,7 +128,7 @@ namespace Sniper.Lighting.DMX
         protected object startLock = null;
 
         [System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptions]
-        protected virtual bool start(int busLength)
+        public virtual bool start()
         {
             if (startLock == null)
             {
@@ -140,11 +140,7 @@ namespace Sniper.Lighting.DMX
                 {
                     if (!Connected)
                     {
-                        if (buffer == null)
-                        {
-                            buffer = new byte[busLength]; // can be any length up to 512. The shorter the faster.
-                            this.busLength = busLength;
-                        }
+                        
                         handle = 0;
                         if (FTDI_OpenDevice(0, ref status))
                         {
@@ -231,21 +227,118 @@ namespace Sniper.Lighting.DMX
                 {
                     queueBuffer = queueBuffers[queue];
                     queueBuffer.CurrentPriority = priority;
+                    return queueBuffer.Buffer;
                 }
-                else
+            }
+            return null;
+        }
+        public QueueBuffer CreateQueue(Guid queue, int priority)
+        {
+            lock (queueBuffers)
+            {
+                QueueBuffer queueBuffer = null;
+                if (!queueBuffers.ContainsKey(queue))
                 {
                     queueBuffer = new QueueBuffer(busLength);
                     queueBuffer.CurrentPriority = priority;
                     queueBuffers.Add(queue, queueBuffer);
                 }
-                return queueBuffer.Buffer;
+                else
+                {
+                    queueBuffer = queueBuffers[queue];
+                }
+                return queueBuffer;
             }
         }
+
+        public void ChangeQueuePriority(Guid queue, int priority)
+        {
+            QueueBuffer queueBuffer = null;
+            lock (queueBuffers)
+            {
+                if (queueBuffers.ContainsKey(queue))
+                {
+                    queueBuffer = queueBuffers[queue];
+                    queueBuffer.CurrentPriority = priority;
+                }
+            }
+        }
+        public void DeleteQueue(Guid queue)
+        {
+            lock (queueBuffers)
+            {
+                if (queueBuffers.ContainsKey(queue))
+                {
+                    queueBuffers.Remove(queue);
+                }
+            }
+        }
+        public Guid[] GetCurrentQueueIds()
+        {
+            lock (queueBuffers)
+            {
+                return queueBuffers.Keys.ToArray();
+            }
+        }
+
+
         protected bool BuildBufferFromQueues()
         {
-            byte[] currentBuffer = GetCurrentBuffer();
+            byte[] oldBuffer = GetCurrentBuffer();
 
             //copy the buffers to an array (fixed length) for sorting & merge - so we can unlock the dictionary sooner
+            QueueBuffer[] queueBuffers = CopyQueueBuffersToArray();
+            byte[] newBuffer = MergeQueueBuffers(queueBuffers);
+
+            bool bufferChanged = CompareBuffers(oldBuffer, newBuffer);
+            if (bufferChanged)
+            {
+                newBuffer.CopyTo(buffer, 0);
+
+                if (StateChanged != null)
+                {
+                    StateChanged(null, new StateChangedEventArgs()
+                    {
+                        CurrentState = buffer
+                    });
+                }
+            }
+            return bufferChanged;
+        }
+
+        private bool CompareBuffers(byte[] oldBuffer, byte[] newBuffer)
+        {
+            bool bufferChanged = false;
+            for (int channel = 0; channel < busLength; channel++)
+            {
+                if (oldBuffer[channel] != newBuffer[channel])
+                {
+                    bufferChanged = true;
+                    newData = true;
+                    break;
+                }
+            }
+            return bufferChanged;
+        }
+
+        private byte[] MergeQueueBuffers(QueueBuffer[] buffers)
+        {
+            byte[] newBuffer = new byte[busLength];
+            IOrderedEnumerable<QueueBuffer> orderedBuffers = buffers.OrderBy(queueBuffer => queueBuffer.CurrentPriority);
+            foreach (var queueBuffer in orderedBuffers)
+            {
+                byte[] queueBufferBuffer = queueBuffer.Buffer;
+                for (int channel = 0; channel < busLength; channel++)
+                {
+                    byte value = queueBufferBuffer[channel];
+                    newBuffer[channel] = value;
+                }
+            }
+            return newBuffer;
+        }
+
+        private QueueBuffer[] CopyQueueBuffersToArray()
+        {
             QueueBuffer[] buffers = null;
             var queueCount = queueBuffers.Count;
             lock (queueBuffers)
@@ -257,39 +350,14 @@ namespace Sniper.Lighting.DMX
                     buffers[index++] = queueBuffer.Value;
                 }
             }
-            IOrderedEnumerable<QueueBuffer> orderedBuffers = buffers.OrderBy(queueBuffer => queueBuffer.CurrentPriority);
-            byte[] newBuffer = new byte[busLength];
-            foreach(var queueBuffer in orderedBuffers)
-            {
-                byte[] queueBufferBuffer = queueBuffer.Buffer;
-                for (int channel = 0; channel < busLength; channel++)
-                {
-                    byte value = queueBufferBuffer[channel];
-                    if(value != 0)
-                    {
-                        newBuffer[channel] = value;
-                    }
-                }
-            }
-            newBuffer.CopyTo(buffer, 0);
-
-            bool bufferChanged = buffer.SequenceEqual(currentBuffer);
-            if (StateChanged != null && bufferChanged)
-            {
-                StateChanged(null, new StateChangedEventArgs()
-                {
-                    CurrentState = buffer
-                });
-            }
-
-            return bufferChanged;
+            return buffers;
         }
 
         public void SetDmxValue(int channel, byte value, Guid queue, int priority)
         {
             //using the queue id, get the buffer
             byte[] queueBuffer = GetBufferForQueue(queue, priority);
-            if (queueBuffer != null)
+            if (queueBuffer != null) //if queue is defined
             {
                 if (channel < queueBuffer.Length)
                 {
@@ -315,17 +383,6 @@ namespace Sniper.Lighting.DMX
                 }
             }
         }
-
-        //write merge loop
-        /*
-         *  if (StateChanged != null)
-                    {
-                        StateChanged(null, new StateChangedEventArgs()
-                        {
-                            CurrentState = buffer
-                        });
-                    }
-         */
 
         public byte[] GetCurrentBuffer()
         {
@@ -564,7 +621,6 @@ namespace Sniper.Lighting.DMX
         {
             //cmbDevList.SelectedIndex = iCurrentIndex;
             FT_HANDLE ftHandle = new FT_HANDLE();
-            FT_DEVICE ftDevice;
             FT_STATUS ftStatus;
             Int16 numDevs;
 
@@ -714,17 +770,7 @@ namespace Sniper.Lighting.DMX
                 writeDMXBUfferThread.Abort();
                 Thread.Sleep(400);
             }
-            //if (easingTickerThread != null)
-            //{
-            //    easingTickerThread.Abort();
-            //    easingTickerThread = null;
-            //    Thread.Sleep(400);
-            //}
-            //if (DelayedActions != null)
-            //{
-            //    //shut down delayed action manager
-            //    DelayedActions.Dispose();
-            //}
+           
         }
         /* Function : FTDI_ReceiveData
          * Author	: ENTTEC

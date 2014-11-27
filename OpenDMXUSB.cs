@@ -11,13 +11,9 @@ namespace Sniper.Lighting.DMX
 {
     public class OpenDMXUSB : DMXProUSB
     {
-        public new bool start()
-        {
-            return start(Settings.Default.DMXChannelCount);
-        }
-
+      
         [System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptions]
-        protected override bool start(int busLength)
+        public override bool start()
         {
             if (startLock == null)
             {
@@ -225,7 +221,7 @@ namespace Sniper.Lighting.DMX
                 {
                     if (Connected)
                     {
-                        BuildBufferFromQueues();
+                        newData = BuildBufferFromQueues();
                         if (newData)
                         {
                             FT_SetBreakOn(handle);
