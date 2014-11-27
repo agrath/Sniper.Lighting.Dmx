@@ -137,7 +137,10 @@ namespace Sniper.Lighting.DMX
                 var inactiveQueues = currentQueues.Except(activeQueues);
                 foreach(var queue in inactiveQueues)
                 {
-                    dmxDevice.DeleteQueue(queue);
+                    if (queue != Guid.Empty) //never delete empty guid queue, used for test UI
+                    {
+                        dmxDevice.DeleteQueue(queue);
+                    }
                 }
                 Thread.Sleep(5);
             }
