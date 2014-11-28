@@ -340,9 +340,9 @@ namespace Sniper.Lighting.DMX
         private QueueBuffer[] CopyQueueBuffersToArray()
         {
             QueueBuffer[] buffers = null;
-            var queueCount = queueBuffers.Count;
             lock (queueBuffers)
             {
+                var queueCount = queueBuffers.Count;
                 buffers = new QueueBuffer[queueCount];
                 int index = 0;
                 foreach (var queueBuffer in queueBuffers)
