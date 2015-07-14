@@ -7,37 +7,36 @@ using System.Threading;
 
 namespace Sniper.Lighting.DMX
 {
-    
-    public static class DmxController<T> where T : DMXProUSB, new()
+    public class DmxControllerInstance
     {
-        private static ThreadSafeList<Effect> effectQueue = new ThreadSafeList<Effect>();
-        private static Thread runningThread;
-        private static bool done;
-        private static T dmxDevice;
-        private readonly static int busLength = 512;
+        private ThreadSafeList<Effect> effectQueue = new ThreadSafeList<Effect>();
+        private Thread runningThread;
+        private bool done;
+        private DMXProUSB dmxDevice;
+        private const int busLength = 512;
 
-        static DmxController()
+        public DmxControllerInstance(DMXDeviceType dmxDeviceType)
         {
-            dmxDevice = new T();
+            dmxDevice = dmxDeviceType == DMXDeviceType.OpenDMX ? new OpenDMXUSB() : new DMXProUSB();
             done = false;
             for (int i = 0; i < busLength; i++)
             {
                 dmxDevice.SetDmxValue(i, 0, Guid.Empty, 1);
-            }            
+            }
             runningThread = new Thread(new ThreadStart(Run));
             runningThread.IsBackground = true;
             runningThread.Start();
             dmxDevice.StateChanged += new StateChangedEventHandler(DMXProUSB_StateChanged);
         }
 
-        public static void QueueEffect(Effect e)
+        public void QueueEffect(Effect e)
         {
             //create a lighting queue for this effect
             dmxDevice.CreateQueue(e.Queue, e.Priority);
             effectQueue.Add(e);
         }
 
-        static void DMXProUSB_StateChanged(object sender, StateChangedEventArgs e)
+        void DMXProUSB_StateChanged(object sender, StateChangedEventArgs e)
         {
             if (StateChanged != null)
             {
@@ -45,7 +44,7 @@ namespace Sniper.Lighting.DMX
             }
         }
 
-        public static Effect EaseDmxValue(Guid queue, int channel, int priority, byte endValue, int duration, EasingType typeIn, EasingType typeOut, EasingExtents extents)
+        public Effect EaseDmxValue(Guid queue, int channel, int priority, byte endValue, int duration, EasingType typeIn, EasingType typeOut, EasingExtents extents)
         {
             byte startValue = dmxDevice.GetDmxValue(channel);
             Effect handle = new Effect(queue, channel, priority, startValue, endValue, duration, typeIn, typeOut, extents);
@@ -54,7 +53,7 @@ namespace Sniper.Lighting.DMX
             return handle;
         }
 
-        public static Effect EaseDmxValue(Guid queue, int channel, int priority, byte startValue, byte endValue, int duration, EasingType typeIn, EasingType typeOut, EasingExtents extents)
+        public Effect EaseDmxValue(Guid queue, int channel, int priority, byte startValue, byte endValue, int duration, EasingType typeIn, EasingType typeOut, EasingExtents extents)
         {
             Effect handle = new Effect(queue, channel, priority, startValue, endValue, duration, typeIn, typeOut, extents);
             QueueEffect(handle);
@@ -62,27 +61,33 @@ namespace Sniper.Lighting.DMX
             return handle;
         }
 
-        public static Effect EaseDmxValue(Guid queue, int channel, int priority, byte startValue, byte endValue, int duration, EasingType typeIn, EasingType typeOut, EasingExtents extents, DateTime when)
+        public Effect EaseDmxValue(Guid queue, int channel, int priority, byte startValue, byte endValue, int duration, EasingType typeIn, EasingType typeOut, EasingExtents extents, DateTime when)
         {
             Effect handle = new Effect(queue, channel, priority, startValue, endValue, duration, typeIn, typeOut, extents);
             QueueEffect(handle);
-            handle.StartIn((int)(when - DateTime.Now).TotalMilliseconds);            
+            handle.StartIn((int)(when - DateTime.Now).TotalMilliseconds);
             return handle;
         }
 
-        public static void SetDmxValue(Guid queue, int channel, int priority, byte value, DateTime when)
+        public void SetDmxValue(Guid queue, int channel, int priority, byte value, DateTime when)
         {
             Effect handle = new Effect(queue, channel, priority, null, value, 0, EasingType.Linear, EasingType.Linear, EasingExtents.EaseInOut);
             QueueEffect(handle);
-            handle.StartIn((int)(when - DateTime.Now).TotalMilliseconds);          
+            handle.StartIn((int)(when - DateTime.Now).TotalMilliseconds);
         }
 
-        public static void SetDmxValue(Guid queue, int channel, int priority, byte value)
+        public void SetDmxValue(Guid queue, int channel, int priority, byte value, DateTime when, int stopInMilliseconds)
+        {
+            SetDmxValue(queue, channel, priority, value, when);
+            SetDmxValue(queue, channel, priority, 0, when.AddMilliseconds(stopInMilliseconds));
+        }
+
+        public void SetDmxValue(Guid queue, int channel, int priority, byte value)
         {
             SetDmxValue(queue, channel, priority, value, DateTime.Now);
         }
 
-        public static void SetDmxValue(Guid queue, int channel, int priority, byte value, int revertInDuration)
+        public void SetDmxValue(Guid queue, int channel, int priority, byte value, int revertInDuration)
         {
             SetDmxValue(queue, channel, priority, value);
             if (revertInDuration != 0)
@@ -91,7 +96,7 @@ namespace Sniper.Lighting.DMX
             }
         }
 
-        public static Effect PulseDmxValue(Guid queue, int channel, int priority, byte startValue, byte endValue, int duration, EasingType typeIn, EasingType typeOut, EasingExtents extents)
+        public Effect PulseDmxValue(Guid queue, int channel, int priority, byte startValue, byte endValue, int duration, EasingType typeIn, EasingType typeOut, EasingExtents extents)
         {
             var handle = new Pulse(queue, channel, priority, startValue, endValue, duration, typeIn, typeOut, extents);
             QueueEffect(handle);
@@ -99,12 +104,12 @@ namespace Sniper.Lighting.DMX
             return handle;
         }
 
-        public static byte GetDmxValue(int channel)
+        public byte GetDmxValue(int channel)
         {
             return dmxDevice.GetDmxValue(channel);
         }
 
-        private static void Run()
+        private void Run()
         {
             Queue<Effect> toRemove = new Queue<Effect>();
             while (!done)
@@ -126,7 +131,7 @@ namespace Sniper.Lighting.DMX
                         toRemove.Enqueue(e);
                     }
                 }
-                while(toRemove.Count > 0)
+                while (toRemove.Count > 0)
                 {
                     Effect finishedEffect = toRemove.Dequeue();
                     effectQueue.Remove(finishedEffect);
@@ -134,7 +139,7 @@ namespace Sniper.Lighting.DMX
                 var activeQueues = effectQueue.Select(x => x.Queue).Distinct();
                 var currentQueues = dmxDevice.GetCurrentQueueIds();
                 var inactiveQueues = currentQueues.Except(activeQueues);
-                foreach(var queue in inactiveQueues)
+                foreach (var queue in inactiveQueues)
                 {
                     if (queue != Guid.Empty) //never delete empty guid queue, used for test UI
                     {
@@ -145,7 +150,7 @@ namespace Sniper.Lighting.DMX
             }
         }
 
-        public static void Dispose()
+        public void Dispose()
         {
             done = true;
             Thread.Sleep(500);
@@ -158,32 +163,37 @@ namespace Sniper.Lighting.DMX
             dmxDevice.Dispose();
         }
 
-        public static byte[] GetCurrentValues()
+        public byte[] GetCurrentValues()
         {
             return dmxDevice.GetCurrentBuffer();
         }
 
-        public static bool Start()
+        public bool Start()
         {
             return dmxDevice.start();
         }
 
-        public static bool Connected { get { return dmxDevice.Connected; } }
-        public static void SetLimits(DmxLimits newLimits)
+        public bool Connected { get { return dmxDevice.Connected; } }
+        public void SetLimits(DmxLimits newLimits)
         {
             dmxDevice.setLimits(newLimits);
         }
 
-        public static event StateChangedEventHandler StateChanged;
+        public event StateChangedEventHandler StateChanged;
 
 
-        public static void Stop()
+        public void Stop()
         {
-            foreach(Effect e in effectQueue)
+            StopEffects();
+            dmxDevice.stop();
+        }
+
+        public void StopEffects()
+        {
+            foreach (Effect e in effectQueue)
             {
                 e.Stop();
             }
-            dmxDevice.stop();
         }
     }
 }

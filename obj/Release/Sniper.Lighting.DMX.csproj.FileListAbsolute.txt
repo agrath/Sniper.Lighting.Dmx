@@ -9,6 +9,6 @@ F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\bin\Release\ftd2xx.dll
 F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\bin\Release\Sniper.Lighting.DMX.dll.config
 F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\bin\Release\Sniper.Lighting.DMX.dll
 F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\bin\Release\Sniper.Lighting.DMX.pdb
-F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\obj\Release\Sniper.Lighting.DMX.csprojResolveAssemblyReference.cache
 F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\obj\Release\Sniper.Lighting.DMX.dll
 F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\obj\Release\Sniper.Lighting.DMX.pdb
+F:\Users\PC\Documents\Code\OpenSource\Sniper.Lighting.Dmx\obj\Release\Sniper.Lighting.DMX.csprojResolveAssemblyReference.cache
