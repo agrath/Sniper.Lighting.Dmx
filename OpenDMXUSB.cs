@@ -30,6 +30,7 @@ namespace Sniper.Lighting.DMX
                             buffer = new byte[busLength]; // can be any length up to 512. The shorter the faster.
                         }
                         handle = 0;
+                        StartDMXWriteThread();
                         if (FTDI_OpenDevice(0, ref status))
                         {
                             if (status == FT_STATUS.FT_OK)
@@ -40,6 +41,14 @@ namespace Sniper.Lighting.DMX
                                 for (int channel = 0; channel < buffer.Length; channel++)
                                 {
                                     value = 0;
+                                    if (defaults != null)
+                                    {
+                                        value = defaults.Values[channel];
+                                    }
+                                    else
+                                    {
+                                        value = 0;
+                                    }
                                     if (limits != null)
                                     {
                                         if (value < limits.Min[channel]) value = limits.Min[channel];
@@ -47,11 +56,6 @@ namespace Sniper.Lighting.DMX
                                     //initial state of channel is set here
                                     SetDmxValue(channel, value, Guid.Empty, 1);
                                 }
-
-
-                                writeDMXBUfferThread = new Thread(new ThreadStart(writeDMXBuffer));
-                                done = false;
-                                writeDMXBUfferThread.Start();
                                 return true;
                             }
                             else
@@ -219,9 +223,9 @@ namespace Sniper.Lighting.DMX
             {
                 try
                 {
+                    newData = BuildBufferFromQueues();
                     if (Connected)
                     {
-                        newData = BuildBufferFromQueues();
                         if (newData)
                         {
                             FT_SetBreakOn(handle);

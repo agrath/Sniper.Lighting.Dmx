@@ -14,10 +14,10 @@ namespace Sniper.Lighting.DMX
         {
             Min = new byte[Settings.Default.DMXChannelCount];
             Max = new byte[Settings.Default.DMXChannelCount];
-            int i=0;
-            foreach (byte b in Max)
+
+            for (int i = 0; i < Max.Length; i++)
             {
-                Max[i++] = 255;
+                Max[i] = 255;
             }
         }
     }
