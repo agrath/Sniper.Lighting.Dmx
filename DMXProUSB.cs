@@ -37,6 +37,13 @@ namespace Sniper.Lighting.DMX
         private const int SET_DMX_RX_MODE = 5;
         protected const int SET_DMX_TX_MODE = 6;
         private const int ONE_BYTE = 1;
+
+        internal byte getDefaultForChannel(int channel)
+        {
+            if (defaults != null && defaults.Values != null && defaults.Values.Length < channel) return defaults.Values[channel];
+            return 0;
+        }
+
         private const byte DMX_START_CODE = 0x7E;
         protected const byte DMX_END_CODE = 0xE7;
         private const byte OFFSET = 0xFF;
@@ -52,6 +59,21 @@ namespace Sniper.Lighting.DMX
         protected static extern FT_STATUS FT_Open(UInt32 uiPort, ref uint ftHandle);
         [DllImport("FTD2XX.dll")]
         protected static extern unsafe FT_STATUS FT_OpenEx(void* pvArg1, UInt32 dwFlags, ref FT_HANDLE ftHandle);
+
+        protected DmxDefaults defaults;
+        internal void setDefaults(DmxDefaults newDefaults)
+        {
+            defaults = newDefaults;
+            if (buffer != null)
+            {
+                int i = 0;
+                foreach (var defaultValue in newDefaults.Values)
+                {
+                    buffer[i++] = defaultValue;
+                }
+            }
+        }
+
         [DllImport("FTD2XX.dll")]
         extern static unsafe FT_STATUS FT_ListDevices(void* pvArg1, void* pvArg2, UInt32 dwFlags);	// FT_ListDevices by number only
         [DllImport("FTD2XX.dll")]
@@ -107,7 +129,7 @@ namespace Sniper.Lighting.DMX
         [DllImport("FTD2XX.dll")]
         protected static extern FT_STATUS FT_SetTimeouts(FT_HANDLE ftHandle, uint ReadTimeout, uint WriteTimeout);
 
-        protected Thread writeDMXBUfferThread;
+        protected Thread threadWriteDMXBuffer;
         public event StateChangedEventHandler StateChanged;
 
         public DMXProUSB()
@@ -140,7 +162,7 @@ namespace Sniper.Lighting.DMX
                 {
                     if (!Connected)
                     {
-                        
+                        StartDMXWriteThread();
                         handle = 0;
                         if (FTDI_OpenDevice(0, ref status))
                         {
@@ -151,7 +173,15 @@ namespace Sniper.Lighting.DMX
                                 byte value = 0;
                                 for (int channel = 0; channel < buffer.Length; channel++)
                                 {
-                                    value = 0;
+                                    if (defaults != null)
+                                    {
+                                        value = defaults.Values[channel];
+                                    }
+                                    else
+                                    {
+                                        value = 0;
+                                    }
+
                                     if (limits != null)
                                     {
                                         if (value < limits.Min[channel])
@@ -160,11 +190,6 @@ namespace Sniper.Lighting.DMX
                                     //initial state of channel is set here
                                     SetDmxValue(channel, value, Guid.Empty, 1);
                                 }
-
-                                writeDMXBUfferThread = new Thread(new ThreadStart(writeDMXBuffer));
-                                writeDMXBUfferThread.IsBackground = true;
-                                done = false;
-                                writeDMXBUfferThread.Start();
 
                                 return true;
                             }
@@ -188,6 +213,17 @@ namespace Sniper.Lighting.DMX
             return false;
         }
 
+        public virtual void StartDMXWriteThread()
+        {
+            done = false;
+            if (threadWriteDMXBuffer == null)
+            {
+                threadWriteDMXBuffer = new Thread(new ThreadStart(writeDMXBuffer));
+                threadWriteDMXBuffer.IsBackground = true;
+                threadWriteDMXBuffer.Start();
+            }
+        }
+
         public virtual void stop()
         {
             byte value = 0;
@@ -206,6 +242,7 @@ namespace Sniper.Lighting.DMX
             FT_Close(handle);
             Connected = false;
             done = true;
+            threadWriteDMXBuffer = null;
         }
         public byte GetDmxValue(int channel)
         {
@@ -290,6 +327,8 @@ namespace Sniper.Lighting.DMX
             QueueBuffer[] queueBuffers = CopyQueueBuffersToArray();
             byte[] newBuffer = MergeQueueBuffers(queueBuffers);
 
+            ApplyLimitsAndDefaults(ref newBuffer);
+
             bool bufferChanged = CompareBuffers(oldBuffer, newBuffer);
             if (bufferChanged)
             {
@@ -304,6 +343,29 @@ namespace Sniper.Lighting.DMX
                 }
             }
             return bufferChanged;
+        }
+
+        private void ApplyLimitsAndDefaults(ref byte[] workingBuffer)
+        {
+            for (int channel = 0; channel < workingBuffer.Length; channel++)
+            {
+                byte value = workingBuffer[channel];
+                if (defaults != null)
+                {
+                    byte defaultValue = defaults.Values[channel];
+                    if(defaultValue != 0)
+                    {
+                        value = defaultValue;
+                    }
+                }
+
+                if (limits != null)
+                {
+                    if (value < limits.Min[channel])
+                        value = limits.Min[channel];
+                }
+                workingBuffer[channel] = value;
+            }
         }
 
         private bool CompareBuffers(byte[] oldBuffer, byte[] newBuffer)
@@ -394,9 +456,9 @@ namespace Sniper.Lighting.DMX
         {
             while (!done)
             {
+                newData = BuildBufferFromQueues();
                 try
                 {
-                    newData = BuildBufferFromQueues();
                     if (Connected)
                     {
                         if (newData)
@@ -413,7 +475,7 @@ namespace Sniper.Lighting.DMX
                     }
                     else
                     {
-                        System.Threading.Thread.Sleep(1000);
+                        System.Threading.Thread.Sleep(25);
                     }
                 }
                 catch (Exception)
@@ -490,7 +552,7 @@ namespace Sniper.Lighting.DMX
             DMXUSBPROParamsType PRO_Params;
             // Try at least 3 times 
             StartCounter++;
-            Console.WriteLine("\n------ D2XX ------- Opening [Device {0}] ------ Try {1}", device_num, StartCounter);
+            //Console.WriteLine("\n------ D2XX ------- Opening [Device {0}] ------ Try {1}", device_num, StartCounter);
             // Open the PRO 
             try
             {
@@ -765,12 +827,12 @@ namespace Sniper.Lighting.DMX
 
             //}
             Thread.Sleep(400);
-            if (writeDMXBUfferThread != null)
+            if (threadWriteDMXBuffer != null)
             {
-                writeDMXBUfferThread.Abort();
+                threadWriteDMXBuffer.Abort();
                 Thread.Sleep(400);
             }
-           
+
         }
         /* Function : FTDI_ReceiveData
          * Author	: ENTTEC

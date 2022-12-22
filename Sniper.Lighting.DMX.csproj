@@ -44,8 +44,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DMXControllerInstance.cs" />
     <Compile Include="DMXDeviceType.cs" />
+    <Compile Include="DmxDefaults.cs" />
     <Compile Include="DmxLimits.cs" />
     <Compile Include="DMXProUSB.cs">
       <SubType>Code</SubType>
@@ -64,6 +64,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="Hold.cs" />
     <Compile Include="Pulse.cs" />
     <Compile Include="QueueBuffer.cs" />
     <Compile Include="StateChangedEventArgs.cs" />
@@ -83,7 +84,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="D:\Work Files\RedBull\Sniper.SkatePark.Automation.Common\Sniper.SkatePark.Automation.Common.csproj">
+    <ProjectReference Include="..\..\..\redbull\redbull\Sniper.SkatePark.Automation.Common\Sniper.SkatePark.Automation.Common.csproj">
       <Project>{512A3A39-611C-4E01-8934-7351D6D4B17B}</Project>
       <Name>Sniper.SkatePark.Automation.Common</Name>
     </ProjectReference>
